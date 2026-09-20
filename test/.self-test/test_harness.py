@@ -476,7 +476,7 @@ def compiler_config(compile_cmd, run_cmd, run_preprocess=None):
     run = {"cmd": run_cmd}
     if run_preprocess:
         run["preprocess"] = run_preprocess
-    return {"compile": {"cmd": compile_cmd}, "run": run}
+    return {"compiler": {"cmd": compile_cmd}, "run": run}
 
 
 def test_compiler_run_end_to_end_pass(harness, run):
@@ -502,7 +502,7 @@ def test_compiler_stdin_and_run_preprocess(harness, run):
 
 def test_compiler_compile_failure(harness, run):
     harness.add_test("cbad", src="// exit: 3\n", meta={"stages": ["compiler"]})
-    stages = {"compile": {"cmd": ["{root}/mock_compiler.py", "{input}"]},
+    stages = {"compiler": {"cmd": ["{root}/mock_compiler.py", "{input}"]},
               "run": {"cmd": ["python3", "{exe}"]}}
     cfg = harness.write_config(stages=stages)
     rc, out = run(["test", "--config", cfg])
@@ -527,8 +527,8 @@ def test_compiler_tolerance_pass_and_diff_fail(harness, run):
 
 
 def test_compiler_exit_contract(harness, run):
-    stages = compiler_config(compile_exe("import sys;sys.exit(5)"), ["python3", "{exe}"])
-    harness.add_test("hw", src="0;", meta={"exit": "nonzero", "stages": ["compiler"]})
+    stages = compiler_config(compile_exe("import sys;print(1);sys.exit(5)"), ["python3", "{exe}"])
+    harness.add_test("hw", src="0;", meta={"exit": {"run": "nonzero"}, "stages": ["compiler"]})
     rc, out = run(["test", "--config", harness.write_config(stages=stages)])
     assert rc == 0 and "PASS  hw" in out
 
@@ -539,7 +539,7 @@ def test_compiler_exit_contract(harness, run):
 
 
 def test_compiler_update_regenerates_and_exit_warning(harness, run):
-    stages = compiler_config(compile_exe("import sys;sys.exit(5)"), ["python3", "{exe}"])
+    stages = compiler_config(compile_exe("import sys;print(1);sys.exit(5)"), ["python3", "{exe}"])
     harness.add_test("hw", src="0;", meta={"exit": 0, "stages": ["compiler"]})
     cfg = harness.write_config(stages=stages)
     rc, out = run(["update", "--config", cfg])
