@@ -2,6 +2,7 @@ package kbn;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Lexer {
 
@@ -22,6 +23,12 @@ public class Lexer {
         // special
         EOF, ERROR
     }
+
+    private static final Map<String, TokenKind> KEYWORDS = Map.of(
+            "val",    TokenKind.VAL,
+            "var",    TokenKind.VAR,
+            "return", TokenKind.RETURN
+    );
 
     // --- Token ---
 
@@ -49,10 +56,6 @@ public class Lexer {
         return (c >= 'a' && c <= 'z')
                 || (c >= 'A' && c <= 'Z')
                 || c == '_';
-    }
-
-    private static boolean isIdentStart(char c) {
-        return isLetter(c);
     }
 
     private static boolean isIdentPart(char c) {
@@ -84,13 +87,14 @@ public class Lexer {
     }
 
     private char peekNext() {
+        // ! DO NOT CHANGE POSITION !
         pos++;
         char c = peek();
         pos--;
         return c;
     }
 
-    private void next() {
+    private void step() {
         if (peek() == '\n') {
             line++;
             col = 1;
@@ -100,40 +104,39 @@ public class Lexer {
         pos++;
     }
 
-    private char peekAndGo() {
-        char c = peek();
-        next();
-        return c;
+    private void next(int n) {
+        for (int i = 0; i < n; i++) step();
     }
 
-    private void skipSpaces() {
+    private void skipWhitespace() {
         while (isWhitespace(peek())) {
-            next();
+            step();
         }
     }
 
-    private String skipComments() {
-         if (peek() == '/') {
+    private String skipComment() {
+        if (peek() == '/') {
             char nextChar = peekNext();
 
-            // single-line comment
+            // single-line comment "//"
             if (nextChar == '/') {
-                next();
-                next();
+                next("//".length());
+
+                // skip comment body
                 while (peek() != '\n' && peek() != 0) {
-                    next();
+                    step();
                 }
+
                 return null;
             }
 
-            // multi-line comment
+            // multi-line comment "/*"
             if (nextChar == '*') {
-                next();
-                next();
+                next("/*".length());
 
                 // skip comment body
                 while ((peek() != '*' || peekNext() != '/') && peek() != 0) {
-                    next();
+                    step();
                 }
 
                 // unterminated block comment error
@@ -141,32 +144,33 @@ public class Lexer {
                     return "Unterminated multi-line comment";
                 }
 
-                // skip "*/"
-                next();
-                next();
-                next();
+                next("*/".length());
             }
-         }
+        }
 
-         return null;
+        return null;
     }
 
     private String readIdent() {
+        assert isLetter(peek());
+
         StringBuilder str = new StringBuilder();
         char c;
         while (isIdentPart(c = peek())) {
             str.append(c);
-            next();
+            step();
         }
         return str.toString();
     }
 
     private String readInt() {
+        assert isDigit(peek());
+
         StringBuilder str = new StringBuilder();
         char c;
         while (isDigit(c = peek())) {
             str.append(c);
-            next();
+            step();
         }
         return str.toString();
     }
@@ -175,21 +179,25 @@ public class Lexer {
         List<Token> tokens = new ArrayList<>();
 
         while (true) {
-            skipSpaces();
-            int startLine = line, startCol = col;
-            String err = skipComments();
+            // skip whitespace and comments
+            while (true) {
+                int startLine = line, startCol = col;
+                int before = pos;
 
-            while (err != null) {
+                String err = skipComment();
+                skipWhitespace();
+
+                if (err == null) {
+                    // no progress check
+                    if (pos == before) break;
+                    else continue;
+                }
+
                 tokens.add(new Token(TokenKind.ERROR, err, startLine, startCol));
-                skipSpaces();
-                startLine = line;
-                startCol = col;
-                err = skipComments();
+                break;
             }
 
-            startLine = line;
-            startCol = col;
-
+            int startLine = line, startCol = col;
             char c = peek();
 
             // eof
@@ -199,25 +207,10 @@ public class Lexer {
             }
 
             // ident || keyword
-            if (isIdentStart(c)) {
+            if (isLetter(c)) {
                 String ident = readIdent();
-
-                if (ident.equals(TokenKind.RETURN.name().toLowerCase())) {
-                    tokens.add(new Token(TokenKind.RETURN, ident, startLine, startCol));
-                    continue;
-                }
-
-                if (ident.equals(TokenKind.VAL.name().toLowerCase())) {
-                    tokens.add(new Token(TokenKind.VAL, ident, startLine, startCol));
-                    continue;
-                }
-
-                if (ident.equals(TokenKind.VAR.name().toLowerCase())) {
-                    tokens.add(new Token(TokenKind.VAR, ident, startLine, startCol));
-                    continue;
-                }
-
-                tokens.add(new Token(TokenKind.IDENT, ident, startLine, startCol));
+                TokenKind kind = KEYWORDS.getOrDefault(ident, TokenKind.IDENT);
+                tokens.add(new Token(kind, ident, startLine, startCol));
                 continue;
             }
 
@@ -228,53 +221,21 @@ public class Lexer {
                 continue;
             }
 
-            next();
-
-            // operators
-            if (c == '+') {
-                tokens.add(new Token(TokenKind.PLUS, "+", startLine, startCol));
-                continue;
+            // single symbol tokens
+            switch (c) {
+                case '+' -> tokens.add(new Token(TokenKind.PLUS,   "+", startLine, startCol));
+                case '-' -> tokens.add(new Token(TokenKind.MINUS,  "-", startLine, startCol));
+                case '*' -> tokens.add(new Token(TokenKind.MULT,   "*", startLine, startCol));
+                case '/' -> tokens.add(new Token(TokenKind.DIV,    "/", startLine, startCol));
+                case '=' -> tokens.add(new Token(TokenKind.ASSIGN, "=", startLine, startCol));
+                case ';' -> tokens.add(new Token(TokenKind.SEMI,   ";", startLine, startCol));
+                case '(' -> tokens.add(new Token(TokenKind.LPAREN, "(", startLine, startCol));
+                case ')' -> tokens.add(new Token(TokenKind.RPAREN, ")", startLine, startCol));
+                default  -> tokens.add(new Token(TokenKind.ERROR, String.valueOf(c), startLine, startCol));
             }
+            step();
 
-            if (c == '-') {
-                tokens.add(new Token(TokenKind.MINUS, "-", startLine, startCol));
-                continue;
-            }
-
-            if (c == '*') {
-                tokens.add(new Token(TokenKind.MULT, "*", startLine, startCol));
-                continue;
-            }
-
-            if (c == '/') {
-                tokens.add(new Token(TokenKind.DIV, "/", startLine, startCol));
-                continue;
-            }
-
-            if (c == '=') {
-                tokens.add(new Token(TokenKind.ASSIGN, "=", startLine, startCol));
-                continue;
-            }
-
-            // punctuation
-            if (c == ';') {
-                tokens.add(new Token(TokenKind.SEMI, ";", startLine, startCol));
-                continue;
-            }
-
-            if (c == '(') {
-                tokens.add(new Token(TokenKind.LPAREN, "(", startLine, startCol));
-                continue;
-            }
-
-            if (c == ')') {
-                tokens.add(new Token(TokenKind.RPAREN, ")", startLine, startCol));
-                continue;
-            }
-
-            tokens.add(new Token(TokenKind.ERROR, String.valueOf(c), startLine, startCol));
+            // continue
         }
     }
-
-
 }
