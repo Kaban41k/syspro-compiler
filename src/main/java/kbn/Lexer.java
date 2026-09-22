@@ -86,8 +86,7 @@ public class Lexer {
         return src.charAt(pos);
     }
 
-    private char peekNext() {
-        // ! DO NOT CHANGE POSITION !
+    private char peekAhead() {
         pos++;
         char c = peek();
         pos--;
@@ -116,7 +115,7 @@ public class Lexer {
 
     private String skipComment() {
         if (peek() == '/') {
-            char nextChar = peekNext();
+            char nextChar = peekAhead();
 
             // single-line comment "//"
             if (nextChar == '/') {
@@ -135,7 +134,7 @@ public class Lexer {
                 next("/*".length());
 
                 // skip comment body
-                while ((peek() != '*' || peekNext() != '/') && peek() != 0) {
+                while ((peek() != '*' || peekAhead() != '/') && peek() != 0) {
                     step();
                 }
 
@@ -187,14 +186,12 @@ public class Lexer {
                 String err = skipComment();
                 skipWhitespace();
 
-                if (err == null) {
-                    // no progress check
-                    if (pos == before) break;
-                    else continue;
-                }
+                if (err == null && pos == before) break;
 
-                tokens.add(new Token(TokenKind.ERROR, err, startLine, startCol));
-                break;
+                if (err != null) {
+                    tokens.add(new Token(TokenKind.ERROR, err, startLine, startCol));
+                    break;
+                }
             }
 
             int startLine = line, startCol = col;
