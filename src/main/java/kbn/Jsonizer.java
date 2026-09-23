@@ -2,7 +2,7 @@ package kbn;
 
 import java.util.List;
 
-public class Jsonizer {
+public final class Jsonizer {
     private static String escape(String s) {
         StringBuilder sb = new StringBuilder(s.length() + 8);
         for (int i = 0; i < s.length(); i++) {
@@ -19,7 +19,7 @@ public class Jsonizer {
         return sb.toString();
     }
 
-    public String tokensToJson(List<Lexer.Token> tokens) {
+    public static String tokensToJson(List<Lexer.Token> tokens) {
         StringBuilder sb = new StringBuilder();
         sb.append("[\n");
 
