@@ -10,7 +10,7 @@ public class Main {
         try {
             run(args);
         } catch (IOException e) {
-            System.err.println("I/O error: " + e.getMessage());
+            System.err.println("I/O error: " + e);
             System.exit(1);
         }
     }
@@ -56,7 +56,11 @@ public class Main {
         String code = Files.readString(Path.of(srcIn));
         List<Lexer.Token> tokens = new Lexer(code).tokenize();
 
-        Files.writeString(Path.of(tokensOut), Jsonizer.tokensToJson(tokens));
+        Path out = Path.of(tokensOut);
+        if (out.getParent() != null) {
+            Files.createDirectories(out.getParent());
+        }
+        Files.writeString(out, Jsonizer.tokensToJson(tokens));
 
         if (tokens.stream().anyMatch(
                 t -> t.kind() == Lexer.TokenKind.ERROR)) {
