@@ -20,7 +20,7 @@ jobs:
         run: pip install pytest
 
       - name: Build your compiler
-        run: javac -d build/classes/java/main src/main/java/kbn/*.java
+        run: ./gradlew classes
 
       - name: Run tests for grammar ${{ matrix.grammar }}
         run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage lexer
