@@ -24,10 +24,23 @@ public class Lexer {
         EOF, ERROR
     }
 
-    private static final Map<String, TokenKind> KEYWORDS = Map.of(
-            "val",    TokenKind.VAL,
-            "var",    TokenKind.VAR,
-            "return", TokenKind.RETURN
+    private static final Map<String, TokenKind> FIXEDTOKENS = Map.ofEntries(
+            // keywords
+            Map.entry("val",    TokenKind.VAL),
+            Map.entry("var",    TokenKind.VAR),
+            Map.entry("return", TokenKind.RETURN),
+
+            // operators
+            Map.entry("+",      TokenKind.PLUS),
+            Map.entry("-",      TokenKind.MINUS),
+            Map.entry("*",      TokenKind.MULT),
+            Map.entry("/",      TokenKind.DIV),
+            Map.entry("=",      TokenKind.ASSIGN),
+
+            // punctuation
+            Map.entry("(",      TokenKind.LPAREN),
+            Map.entry(")",      TokenKind.RPAREN),
+            Map.entry(";",      TokenKind.SEMI)
     );
 
     // --- Token ---
@@ -86,6 +99,7 @@ public class Lexer {
         return src.charAt(pos);
     }
 
+    // TODO replace peekAhead with stepBack or smth like that
     private char peekAhead() {
         pos++;
         char c = peek();
@@ -174,10 +188,17 @@ public class Lexer {
         return str.toString();
     }
 
+    // TODO
+    private String getLexem() {
+        return "";
+    }
+
+    // TODO rewrite all tokenize() with getLexem()
     public List<Token> tokenize() {
         List<Token> tokens = new ArrayList<>();
 
         while (true) {
+            // TODO refactor this comment skip
             // skip whitespace and comments
             while (true) {
                 int startLine = line, startCol = col;
@@ -206,7 +227,7 @@ public class Lexer {
             // ident || keyword
             if (isLetter(c)) {
                 String ident = readIdent();
-                TokenKind kind = KEYWORDS.getOrDefault(ident, TokenKind.IDENT);
+                TokenKind kind = FIXEDTOKENS.getOrDefault(ident, TokenKind.IDENT);
                 tokens.add(new Token(kind, ident, startLine, startCol));
                 continue;
             }
