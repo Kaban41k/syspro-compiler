@@ -45,19 +45,7 @@ public class Lexer {
 
     // --- Token ---
 
-    public static final class Token {
-        public final TokenKind kind;
-        public final String value;
-        public final int line;
-        public final int column;
-
-        public Token(TokenKind kind, String value, int line, int column) {
-            this.kind = kind;
-            this.value = value;
-            this.line = line;
-            this.column = column;
-        }
-    }
+    public record Token(TokenKind kind, String value, int line, int column) {}
 
     // --- Char Functions ---
 

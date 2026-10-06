@@ -59,7 +59,7 @@ public class Main {
         Files.writeString(Path.of(tokensOut), Jsonizer.tokensToJson(tokens));
 
         if (tokens.stream().anyMatch(
-                t -> t.kind == Lexer.TokenKind.ERROR)) {
+                t -> t.kind() == Lexer.TokenKind.ERROR)) {
             System.exit(1);
         }
     }
