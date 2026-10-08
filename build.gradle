@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-group = 'org.example'
+group = 'com.github.kaban41k'
 version = '0.1.0'
 
 java {
@@ -22,7 +22,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'kbn.Main'
+    mainClass = 'com.github.kaban41k.syspro.compiler.Main'
 }
 
 tasks.named('test') {

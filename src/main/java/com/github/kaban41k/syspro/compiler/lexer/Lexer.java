@@ -1,4 +1,7 @@
-package kbn;
+package com.github.kaban41k.syspro.compiler.lexer;
+
+import com.github.kaban41k.syspro.compiler.token.Token;
+import com.github.kaban41k.syspro.compiler.token.TokenKind;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,27 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 public class Lexer {
-
-    public enum TokenKind {
-        // literals
-        IDENT, INT,
-
-        // keywords
-        VAL, VAR, RETURN,
-
-        // operators
-        PLUS, MINUS, MULT, DIV, ASSIGN,
-
-        // punctuation
-        LPAREN, RPAREN,
-        SEMI,
-
-        // special
-        EOF, ERROR,
-        UNFINISHED, SLCOMMENT, MLCOMMENT
-    }
-
-
     private static final Map<String, TokenKind> KEYWORDS = Map.ofEntries(
         Map.entry("val",    TokenKind.VAL),
         Map.entry("var",    TokenKind.VAR),
@@ -67,11 +49,7 @@ public class Lexer {
 
         return Map.copyOf(result);
     }
-
-    // --- Token ---
-
-    public record Token(TokenKind kind, String value, int line, int column) {}
-
+    
     // --- Char Functions ---
 
     private static boolean isDigit(char c) {

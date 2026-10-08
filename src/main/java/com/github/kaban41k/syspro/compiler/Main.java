@@ -1,4 +1,9 @@
-package kbn;
+package com.github.kaban41k.syspro.compiler;
+
+import com.github.kaban41k.syspro.compiler.lexer.Jsonizer;
+import com.github.kaban41k.syspro.compiler.lexer.Lexer;
+import com.github.kaban41k.syspro.compiler.token.Token;
+import com.github.kaban41k.syspro.compiler.token.TokenKind;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -54,7 +59,7 @@ public class Main {
         }
 
         String code = Files.readString(Path.of(srcIn));
-        List<Lexer.Token> tokens = new Lexer(code).tokenize();
+        List<Token> tokens = new Lexer(code).tokenize();
 
         Path out = Path.of(tokensOut);
         if (out.getParent() != null) {
@@ -63,7 +68,7 @@ public class Main {
         Files.writeString(out, Jsonizer.tokensToJson(tokens));
 
         if (tokens.stream().anyMatch(
-                t -> t.kind() == Lexer.TokenKind.ERROR)) {
+                t -> t.kind() == TokenKind.ERROR)) {
             System.exit(1);
         }
     }

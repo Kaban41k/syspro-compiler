@@ -1,4 +1,6 @@
-package kbn;
+package com.github.kaban41k.syspro.compiler.lexer;
+
+import com.github.kaban41k.syspro.compiler.token.Token;
 
 import java.util.List;
 
@@ -19,12 +21,12 @@ public final class Jsonizer {
         return sb.toString();
     }
 
-    public static String tokensToJson(List<Lexer.Token> tokens) {
+    public static String tokensToJson(List<Token> tokens) {
         StringBuilder sb = new StringBuilder();
         sb.append("[\n");
 
         for (int i = 0; i < tokens.size(); i++) {
-            Lexer.Token t = tokens.get(i);
+            Token t = tokens.get(i);
 
             sb.append("{");
             sb.append("\"kind\": \"").append(t.kind().name()).append("\", ");

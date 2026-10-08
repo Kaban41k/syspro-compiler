@@ -6,7 +6,7 @@
   "out_dir": "{root}/test/build",
   "stages": {
     "lexer": {
-      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "kbn.Main",
+      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "com.github.kaban41k.syspro.compiler.Main",
         "-g", "{grammar}", "-t", "{tokens_out}", "{input}"],
       "out": "{tokens_out}",
       "preprocess": [
@@ -14,7 +14,7 @@
       ]
     },
     "parser": {
-      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "kbn.Main",
+      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "com.github.kaban41k.syspro.compiler.Main",
         "-g", "{grammar}", "-a", "{ast_in}", "{input}"],
       "out": "{ast_out}",
       "preprocess": [
@@ -22,7 +22,7 @@
       ]
     },
     "llvm": {
-      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "kbn.Main",
+      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "com.github.kaban41k.syspro.compiler.Main",
         "-g", "{grammar}", "-o", "{llvm_out}", "{input}"],
       "out": "{llvm_out}",
       "preprocess": [
@@ -30,7 +30,7 @@
       ]
     },
     "compiler": {
-      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "kbn.Main",
+      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "com.github.kaban41k.syspro.compiler.Main",
         "-g", "{grammar}", "-o", "{exe}", "{input}"]
     },
     "run": {
