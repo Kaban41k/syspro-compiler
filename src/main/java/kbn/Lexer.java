@@ -1,6 +1,7 @@
 package kbn;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,27 +22,51 @@ public class Lexer {
         SEMI,
 
         // special
-        EOF, ERROR
+        EOF, ERROR,
+        UNFINISHED, SLCOMMENT, MLCOMMENT
     }
 
-    private static final Map<String, TokenKind> FIXEDTOKENS = Map.ofEntries(
-            // keywords
-            Map.entry("val",    TokenKind.VAL),
-            Map.entry("var",    TokenKind.VAR),
-            Map.entry("return", TokenKind.RETURN),
 
-            // operators
-            Map.entry("+",      TokenKind.PLUS),
-            Map.entry("-",      TokenKind.MINUS),
-            Map.entry("*",      TokenKind.MULT),
-            Map.entry("/",      TokenKind.DIV),
-            Map.entry("=",      TokenKind.ASSIGN),
-
-            // punctuation
-            Map.entry("(",      TokenKind.LPAREN),
-            Map.entry(")",      TokenKind.RPAREN),
-            Map.entry(";",      TokenKind.SEMI)
+    private static final Map<String, TokenKind> KEYWORDS = Map.ofEntries(
+        Map.entry("val",    TokenKind.VAL),
+        Map.entry("var",    TokenKind.VAR),
+        Map.entry("return", TokenKind.RETURN)
     );
+
+    private static final Map<String, TokenKind> FIXEDTOKENS = buildFixedTokens();
+
+    private static Map<String, TokenKind> buildFixedTokens() {
+        Map<String, TokenKind> base = Map.ofEntries(
+                // operators
+                Map.entry("+",  TokenKind.PLUS),
+                Map.entry("-",  TokenKind.MINUS),
+                Map.entry("*",  TokenKind.MULT),
+                Map.entry("/",  TokenKind.DIV),
+                Map.entry("=",  TokenKind.ASSIGN),
+
+                // punctuation
+                Map.entry("(",  TokenKind.LPAREN),
+                Map.entry(")",  TokenKind.RPAREN),
+                Map.entry(";",  TokenKind.SEMI),
+
+                // comments
+                Map.entry("//", TokenKind.SLCOMMENT),
+                Map.entry("/*", TokenKind.MLCOMMENT)
+        );
+
+        Map<String, TokenKind> result = new HashMap<>(base);
+
+        for (String s : base.keySet()) {
+            if (s.length() > 1) {
+                for (int i = 1; i < s.length(); i++) {
+                    String prefix = s.substring(0, i);
+                    result.putIfAbsent(prefix, TokenKind.UNFINISHED);
+                }
+            }
+        }
+
+        return Map.copyOf(result);
+    }
 
     // --- Token ---
 
@@ -54,9 +79,9 @@ public class Lexer {
     }
 
     private static boolean isLetter(char c) {
-        return (c >= 'a' && c <= 'z')
-                || (c >= 'A' && c <= 'Z')
-                || c == '_';
+        return (c >= 'a' && c <= 'z') ||
+               (c >= 'A' && c <= 'Z') ||
+                c == '_';
     }
 
     private static boolean isIdentPart(char c) {
@@ -87,26 +112,35 @@ public class Lexer {
         return src.charAt(pos);
     }
 
-    // TODO replace peekAhead with stepBack or smth like that
-    private char peekAhead() {
-        pos++;
-        char c = peek();
-        pos--;
-        return c;
+    private char peekAt(int n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("n must be >= 0, got " + n);
+        }
+
+        return pos + n < src.length() ? src.charAt(pos + n) : 0;
     }
 
-    private void step() {
-        if (peek() == '\n') {
+
+    private char step() {
+        char c = peek();
+        if (c == 0) return 0;
+        if (c == '\n') {
             line++;
             col = 1;
         } else {
             col++;
         }
         pos++;
+        return c;
     }
 
-    private void next(int n) {
-        for (int i = 0; i < n; i++) step();
+    private void skip(int n) {
+        for (int i = 0; i < n; i++) {
+            if (peek() == 0) {
+                break;
+            }
+            step();
+        }
     }
 
     private void skipWhitespace() {
@@ -115,133 +149,123 @@ public class Lexer {
         }
     }
 
-    private String skipComment() {
-        if (peek() == '/') {
-            char nextChar = peekAhead();
+    private void skipSLComment() {
+        while (peek() != '\n' && peek() != 0) {
+            step();
+        }
+    }
 
-            // single-line comment "//"
-            if (nextChar == '/') {
-                next("//".length());
-
-                // skip comment body
-                while (peek() != '\n' && peek() != 0) {
-                    step();
-                }
-
-                return null;
-            }
-
-            // multi-line comment "/*"
-            if (nextChar == '*') {
-                next("/*".length());
-
-                // skip comment body
-                while ((peek() != '*' || peekAhead() != '/') && peek() != 0) {
-                    step();
-                }
-
-                // unterminated block comment error
-                if (peek() == 0) {
-                    return "Unterminated multi-line comment";
-                }
-
-                next("*/".length());
+    private boolean skipMLComment() {
+        while (peek() != 0) {
+            if (step() == '*' && peek() == '/') {
+                step();
+                return true;
             }
         }
 
-        return null;
+        return false;
     }
 
     private String readIdent() {
-        assert isLetter(peek());
+        if (!isLetter(peek()))
+            return "";
 
-        StringBuilder str = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         char c;
         while (isIdentPart(c = peek())) {
-            str.append(c);
+            sb.append(c);
             step();
         }
-        return str.toString();
+        return sb.toString();
     }
 
     private String readInt() {
-        assert isDigit(peek());
+        if (!isDigit(peek()))
+            return "";
 
-        StringBuilder str = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         char c;
         while (isDigit(c = peek())) {
-            str.append(c);
+            sb.append(c);
             step();
         }
-        return str.toString();
+        return sb.toString();
     }
 
-    // TODO
-    private String getLexem() {
-        return "";
+    private Token getToken() {
+        skipWhitespace();
+
+        int startLine = line;
+        int startCol = col;
+
+        if (peek() == 0) {
+            return new Token(TokenKind.EOF, "", startLine, startCol);
+        }
+
+        if (isLetter(peek())) {
+            String v = readIdent();
+            TokenKind kind = KEYWORDS.getOrDefault(v, TokenKind.IDENT);
+
+            return new Token(kind, v, startLine, startCol);
+        }
+
+        if (isDigit(peek())) {
+            String v = readInt();
+            return new Token(TokenKind.INT, v, startLine, startCol);
+        }
+
+        TokenKind kind = TokenKind.ERROR;
+        String value = "";
+
+        StringBuilder buf = new StringBuilder();
+        TokenKind bufKind;
+
+        while(true) {
+            char c = peekAt(buf.length());
+            if (c == 0) break;
+            buf.append(c);
+            bufKind = FIXEDTOKENS.getOrDefault(buf.toString(), TokenKind.ERROR);
+
+            if (bufKind == TokenKind.ERROR) break;
+
+            if (bufKind != TokenKind.UNFINISHED) {
+                value = buf.toString();
+                kind = bufKind;
+            }
+        }
+
+        if (kind == TokenKind.ERROR) {
+            return new Token(TokenKind.ERROR, String.valueOf(step()), startLine, startCol);
+        }
+
+        skip(value.length());
+
+        return new Token(kind, value, startLine, startCol);
     }
 
-    // TODO rewrite all tokenize() with getLexem()
     public List<Token> tokenize() {
         List<Token> tokens = new ArrayList<>();
 
         while (true) {
-            // TODO refactor this comment skip
-            // skip whitespace and comments
-            while (true) {
-                int startLine = line, startCol = col;
-                int before = pos;
+            Token token = getToken();
 
-                String err = skipComment();
-                skipWhitespace();
-
-                if (err == null && pos == before) break;
-
-                if (err != null) {
-                    tokens.add(new Token(TokenKind.ERROR, err, startLine, startCol));
-                    break;
+            switch (token.kind()) {
+                case TokenKind.SLCOMMENT -> skipSLComment();
+                case TokenKind.MLCOMMENT -> {
+                    if (!skipMLComment()) {
+                        token = new Token(TokenKind.ERROR,
+                                "Unterminated multi-line comment",
+                                token.line(),
+                                token.column());
+                        tokens.add(token);
+                    }
                 }
+                case TokenKind.EOF -> {
+                    tokens.add(token);
+                    return tokens;
+                }
+                default -> tokens.add(token);
             }
-
-            int startLine = line, startCol = col;
-            char c = peek();
-
-            // eof
-            if (c == 0) {
-                tokens.add(new Token(TokenKind.EOF, "", startLine, startCol));
-                return tokens;
-            }
-
-            // ident || keyword
-            if (isLetter(c)) {
-                String ident = readIdent();
-                TokenKind kind = FIXEDTOKENS.getOrDefault(ident, TokenKind.IDENT);
-                tokens.add(new Token(kind, ident, startLine, startCol));
-                continue;
-            }
-
-            // int
-            if (isDigit(c)) {
-                String integer = readInt();
-                tokens.add(new Token(TokenKind.INT, integer, startLine, startCol));
-                continue;
-            }
-
-            // single symbol tokens
-            switch (c) {
-                case '+' -> tokens.add(new Token(TokenKind.PLUS,   "+", startLine, startCol));
-                case '-' -> tokens.add(new Token(TokenKind.MINUS,  "-", startLine, startCol));
-                case '*' -> tokens.add(new Token(TokenKind.MULT,   "*", startLine, startCol));
-                case '/' -> tokens.add(new Token(TokenKind.DIV,    "/", startLine, startCol));
-                case '=' -> tokens.add(new Token(TokenKind.ASSIGN, "=", startLine, startCol));
-                case ';' -> tokens.add(new Token(TokenKind.SEMI,   ";", startLine, startCol));
-                case '(' -> tokens.add(new Token(TokenKind.LPAREN, "(", startLine, startCol));
-                case ')' -> tokens.add(new Token(TokenKind.RPAREN, ")", startLine, startCol));
-                default  -> tokens.add(new Token(TokenKind.ERROR, String.valueOf(c), startLine, startCol));
-            }
-            step();
-
-            // continue
         }
     }
 }
