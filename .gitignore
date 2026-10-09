@@ -16,6 +16,21 @@ __pycache__/
 *.pyo
 *.egg-info/
 
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+out/
+
 # OS
 .DS_Store
 Thumbs.db
