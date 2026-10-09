@@ -86,8 +86,7 @@ public class Lexer {
     }
 
     private char peek() {
-        if (pos >= src.length()) return 0;
-        return src.charAt(pos);
+        return pos < src.length() ? src.charAt(pos) : 0;
     }
 
     private char peekAt(int n) {
