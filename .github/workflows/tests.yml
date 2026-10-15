@@ -28,4 +28,4 @@ jobs:
         run: ./gradlew classes
 
       - name: Run tests for grammar ${{ matrix.grammar }}
-        run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage lexer
+        run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage parser
