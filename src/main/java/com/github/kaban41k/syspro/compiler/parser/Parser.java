@@ -221,10 +221,17 @@ public class Parser {
         step();
 
         Token name = expectStep(TokenKind.IDENT);
+        Expr expr;
 
-        expectStep(TokenKind.ASSIGN);
-        Expr expr = parseExpression();
-        expectStep(TokenKind.SEMI);
+        if (matchStep(TokenKind.ASSIGN)) {
+            expr = parseExpression();
+        } else {
+            if (check(TokenKind.SEMI)) step();
+            expr = parseExpression();
+        }
+
+        while (!check(TokenKind.SEMI) && !check(TokenKind.EOF)) step();
+        if (check(TokenKind.SEMI)) step();
 
         return new Declare(pos(previous()), mut, name.value(), expr);
     }
