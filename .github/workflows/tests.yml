@@ -1,8 +1,6 @@
 name: tests
-
 on:
   push:
-    branches: [main]
   pull_request:
 
 jobs:
@@ -17,20 +15,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
 
       - name: Install test harness dependency
         run: pip install pytest
 
       - name: Build your compiler
-        run: |
-          # TODO: Replace with your compiler's build command
-          # Examples:
-          #   cargo build                          # Rust
-          #   javac src/*.java -d build/            # Java
-          #   go build -o build/splc ./src           # Go
-          #   ghc -o build/splc src/Main.hs         # Haskell
-          echo "No compiler configured. Edit this step to build your compiler."
-          exit 1
+        run: ./gradlew classes
 
       - name: Run tests for grammar ${{ matrix.grammar }}
-        run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build
+        run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage lexer
