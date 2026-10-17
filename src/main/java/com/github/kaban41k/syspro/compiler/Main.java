@@ -72,28 +72,27 @@ public class Main {
         }
 
         String code = Files.readString(Path.of(srcIn));
-
         List<Token> tokens = new Lexer(code).tokenize();
-        Parser parser = new Parser(tokens);
-
-        ProgramNode ast = parser.parse();
 
         if (tokensOut != null) {
             writeOut(tokensOut, Jsonizer.tokensToJson(tokens));
-        }
-
-        if (astOut != null) {
-            writeOut(astOut, AstJsonizer.toJson(ast));
         }
 
         if (tokens.stream().anyMatch(t -> t.kind() == TokenKind.ERROR)) {
             System.exit(1);
         }
 
-        if (AstErrors.hasErrors(ast)
-                || SemanticErrors.hasErrors(ast)
-                || !parser.errors().isEmpty()) {
-            System.exit(1);
+        if (astOut != null) {
+            Parser parser = new Parser(tokens);
+            ProgramNode ast = parser.parse();
+
+            writeOut(astOut, AstJsonizer.toJson(ast));
+
+            if (AstErrors.hasErrors(ast)
+                    || SemanticErrors.hasErrors(ast)
+                    || !parser.errors().isEmpty()) {
+                System.exit(1);
+            }
         }
     }
 

@@ -27,5 +27,8 @@ jobs:
       - name: Build your compiler
         run: ./gradlew classes
 
-      - name: Run tests for grammar ${{ matrix.grammar }}
+      - name: Run lexer tests for grammar ${{ matrix.grammar }}
+        run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage lexer
+
+      - name: Run parser tests for grammar ${{ matrix.grammar }}
         run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage parser
