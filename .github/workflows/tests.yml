@@ -32,3 +32,6 @@ jobs:
 
       - name: Run parser tests for grammar ${{ matrix.grammar }}
         run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage parser
+
+      - name: Run llvm tests for grammar ${{ matrix.grammar }}
+        run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --no-build --stage llvm
