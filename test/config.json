@@ -30,8 +30,8 @@
       ]
     },
     "compiler": {
-      "cmd": ["java", "-cp", "{root}/build/classes/java/main", "com.github.kaban41k.syspro.compiler.Main",
-        "-g", "{grammar}", "-o", "{exe}", "{input}"]
+      "cmd": ["sh", "-c",
+        "java -cp {root}/build/classes/java/main com.github.kaban41k.syspro.compiler.Main -g {grammar} -o {exe}.ll {input} && clang {exe}.ll -o {exe}"]
     },
     "run": {
       "cmd": ["{exe}"],
