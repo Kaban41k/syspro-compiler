@@ -4,6 +4,6 @@ import com.github.kaban41k.syspro.compiler.common.Position;
 
 public record IntLiteral(
         Position pos,
-        int value
+        long value
 ) implements Expr {
 }

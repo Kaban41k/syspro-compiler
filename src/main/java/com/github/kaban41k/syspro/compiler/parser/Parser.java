@@ -139,7 +139,7 @@ public class Parser {
     private Expr parsePrimary() {
         if (matchStep(TokenKind.INT)) {
             Token t = previous();
-            return new IntLiteral(pos(t), Integer.parseInt(t.value()));
+            return new IntLiteral(pos(t), Long.parseLong(t.value()));
         }
 
         if (matchStep(TokenKind.IDENT)) {

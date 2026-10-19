@@ -152,7 +152,7 @@ public final class AstJsonizer {
         closeObject();
     }
 
-    private void fieldInt(String s, int value) {
+    private void fieldInt(String s, long value) {
         comma();
         indent();
         sb.append('"').append(s).append("\": ").append(value);
