@@ -1,5 +1,6 @@
 package com.github.kaban41k.syspro.compiler.lexer;
 
+import com.github.kaban41k.syspro.compiler.common.Position;
 import com.github.kaban41k.syspro.compiler.token.Token;
 import com.github.kaban41k.syspro.compiler.token.TokenKind;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ public class JsonizerTest {
                           """;
 
         List<Token> tokens = List.of(
-                new Token(TokenKind.EOF, "", 1, 1)
+                new Token(TokenKind.EOF, "", new Position(1, 1))
         );
 
         assertEquals(expected, Jsonizer.tokensToJson(tokens));
@@ -37,12 +38,12 @@ public class JsonizerTest {
                           """;
 
         List<Token> tokens = List.of(
-                new Token(TokenKind.VAR,    "var", 1, 1),
-                new Token(TokenKind.IDENT,  "x",   1, 5),
-                new Token(TokenKind.ASSIGN, "=",   1, 7),
-                new Token(TokenKind.INT,    "10",  1, 9),
-                new Token(TokenKind.SEMI,   ";",   1, 11),
-                new Token(TokenKind.EOF,    "",    2, 1)
+                new Token(TokenKind.VAR,    "var", new Position(1, 1)),
+                new Token(TokenKind.IDENT,  "x",   new Position(1, 5)),
+                new Token(TokenKind.ASSIGN, "=",   new Position(1, 7)),
+                new Token(TokenKind.INT,    "10",  new Position(1, 9)),
+                new Token(TokenKind.SEMI,   ";",   new Position(1, 11)),
+                new Token(TokenKind.EOF,    "",    new Position(2, 1))
         );
 
         assertEquals(expected, Jsonizer.tokensToJson(tokens));
