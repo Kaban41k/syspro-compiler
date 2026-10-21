@@ -78,27 +78,22 @@ public class Parser {
     private Token expectStep(TokenKind kind) {
         if (!check(kind)) {
             Token t = peek();
-            String value = "expected '" + kind + "', got '" + t.kind() + "' at " + t.line() + ":" + t.column();
+            String value = "expected '" + kind + "', got '" + t.kind() + "' at " + t.pos().line() + ":" + t.pos().column();
 
             errors.add(value);
 
             return new Token(
                     TokenKind.ERROR,
                     value,
-                    t.column(),
-                    t.line()
+                    t.pos()
             );
         }
 
         return step();
     }
 
-    private Position pos(Token t) {
-        return new Position(t.line(), t.column());
-    }
-
     private ParseException error(String msg) {
-        return new ParseException(msg, pos(peek()));
+        return new ParseException(msg, peek().pos());
     }
 
     private Op toOp(Token t) {
@@ -120,7 +115,7 @@ public class Parser {
 
         Token end = body.isEmpty() ? peek() : previous();
 
-        return new ProgramNode(pos(end), body);
+        return new ProgramNode(end.pos(), body);
     }
 
     private Stmt parseStatement() {
@@ -139,12 +134,12 @@ public class Parser {
     private Expr parsePrimary() {
         if (matchStep(TokenKind.INT)) {
             Token t = previous();
-            return new IntLiteral(pos(t), Long.parseLong(t.value()));
+            return new IntLiteral(t.pos(), Long.parseLong(t.value()));
         }
 
         if (matchStep(TokenKind.IDENT)) {
             Token t = previous();
-            return new Ident(pos(t), t.value());
+            return new Ident(t.pos(), t.value());
         }
 
         if (matchStep(TokenKind.LPAREN)) {
@@ -153,13 +148,13 @@ public class Parser {
             return e;
         }
 
-        return new ErrorExpr(pos(peek()), "unexpected token '" + peek().kind() + "'");
+        return new ErrorExpr(peek().pos(), "unexpected token '" + peek().kind() + "'");
     }
 
     private Expr parseUnary() {
         if (matchStep(TokenKind.MINUS)) {
             Expr operand = parseUnary();
-            return new Unary(pos(previous()), Op.MINUS, operand);
+            return new Unary(previous().pos(), Op.MINUS, operand);
         }
 
         return parsePrimary();
@@ -171,7 +166,7 @@ public class Parser {
         while (matchStep(TokenKind.MULT, TokenKind.DIV)) {
             Token op = previous();
             Expr right = parseUnary();
-            left = new BinOp(pos(previous()), toOp(op), left, right);
+            left = new BinOp(previous().pos(), toOp(op), left, right);
         }
 
         return left;
@@ -183,7 +178,7 @@ public class Parser {
         while (matchStep(TokenKind.PLUS, TokenKind.MINUS)) {
             Token op = previous();
             Expr right = parseMult();
-            left = new BinOp(pos(previous()), toOp(op), left, right);
+            left = new BinOp(previous().pos(), toOp(op), left, right);
         }
 
         return left;
@@ -198,7 +193,7 @@ public class Parser {
 
         expectStep(TokenKind.SEMI);
 
-        return new ExprStmt(pos(previous()), expr);
+        return new ExprStmt(previous().pos(), expr);
     }
 
     private Stmt parseReturn() {
@@ -206,7 +201,7 @@ public class Parser {
         Expr value = parseExpression();
         expectStep(TokenKind.SEMI);
 
-        return new Return(pos(previous()), value);
+        return new Return(previous().pos(), value);
     }
 
     private Stmt parseDeclare() {
@@ -233,17 +228,17 @@ public class Parser {
         while (!check(TokenKind.SEMI) && !check(TokenKind.EOF)) step();
         if (check(TokenKind.SEMI)) step();
 
-        return new Declare(pos(previous()), mut, name.value(), expr);
+        return new Declare(previous().pos(), mut, name.value(), expr);
     }
 
     private Stmt parseAssign() {
         Token name = expectStep(TokenKind.IDENT);
-        Ident target = new Ident(pos(name), name.value());
+        Ident target = new Ident(name.pos(), name.value());
 
         expectStep(TokenKind.ASSIGN);
         Expr value = parseExpression();
         expectStep(TokenKind.SEMI);
 
-        return new Assign(pos(previous()), target, value);
+        return new Assign(previous().pos(), target, value);
     }
 }
