@@ -2,6 +2,7 @@ package com.github.kaban41k.syspro.compiler;
 
 import com.github.kaban41k.syspro.compiler.ast.AstErrors;
 import com.github.kaban41k.syspro.compiler.ast.SemanticErrors;
+import com.github.kaban41k.syspro.compiler.codegen.LlvmGenerator;
 import com.github.kaban41k.syspro.compiler.lexer.Jsonizer;
 import com.github.kaban41k.syspro.compiler.lexer.Lexer;
 
@@ -32,6 +33,7 @@ public class Main {
         Integer grammarVersion = null;
         String tokensOut = null;
         String astOut = null;
+        String llvmOut = null;
         String srcIn = null;
 
         for (int i = 0; i < args.length; i++) {
@@ -49,8 +51,8 @@ public class Main {
                     astOut = args[++i];
                 }
                 case "-o" -> {
-                    System.err.println("flag " + args[i] + " not implemented yet");
-                    System.exit(2);
+                    if (i + 1 >= args.length) wrongUsage("missing value for -o");
+                    llvmOut = args[++i];
                 }
                 default -> {
                     if (args[i].startsWith("-")) {
@@ -62,7 +64,7 @@ public class Main {
             }
         }
 
-        if (srcIn == null || (tokensOut == null && astOut == null)) {
+        if (srcIn == null || (tokensOut == null && astOut == null && llvmOut == null)) {
             wrongUsage("missing input or output flag");
             return;
         }
@@ -82,10 +84,10 @@ public class Main {
             System.exit(1);
         }
 
-        if (astOut != null) {
-            Parser parser = new Parser(tokens);
-            ProgramNode ast = parser.parse();
+        Parser parser = new Parser(tokens);
+        ProgramNode ast = parser.parse();
 
+        if (astOut != null) {
             writeOut(astOut, AstJsonizer.toJson(ast));
 
             if (AstErrors.hasErrors(ast)
@@ -93,6 +95,11 @@ public class Main {
                     || !parser.errors().isEmpty()) {
                 System.exit(1);
             }
+        }
+
+        if (llvmOut != null) {
+            String ir = new LlvmGenerator().generate(ast);
+            writeOut(llvmOut, ir);
         }
     }
 
