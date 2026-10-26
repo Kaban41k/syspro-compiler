@@ -1,9 +1,17 @@
 package com.github.kaban41k.syspro.compiler;
 
+import com.github.kaban41k.syspro.compiler.ast.AstErrors;
+import com.github.kaban41k.syspro.compiler.ast.SemanticErrors;
 import com.github.kaban41k.syspro.compiler.lexer.Jsonizer;
 import com.github.kaban41k.syspro.compiler.lexer.Lexer;
+
 import com.github.kaban41k.syspro.compiler.token.Token;
 import com.github.kaban41k.syspro.compiler.token.TokenKind;
+
+import com.github.kaban41k.syspro.compiler.ast.AstJsonizer;
+import com.github.kaban41k.syspro.compiler.ast.ProgramNode;
+
+import com.github.kaban41k.syspro.compiler.parser.Parser;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,6 +31,7 @@ public class Main {
     private static void run(String[] args) throws IOException {
         Integer grammarVersion = null;
         String tokensOut = null;
+        String astOut = null;
         String srcIn = null;
 
         for (int i = 0; i < args.length; i++) {
@@ -35,7 +44,11 @@ public class Main {
                     if (i + 1 >= args.length) wrongUsage("missing value for -t");
                     tokensOut = args[++i];
                 }
-                case "-a", "-o" -> {
+                case "-a" -> {
+                    if (i + 1 >= args.length) wrongUsage("missing value for -a");
+                    astOut = args[++i];
+                }
+                case "-o" -> {
                     System.err.println("flag " + args[i] + " not implemented yet");
                     System.exit(2);
                 }
@@ -49,8 +62,8 @@ public class Main {
             }
         }
 
-        if (srcIn == null || tokensOut == null) {
-            wrongUsage("missing input or -t");
+        if (srcIn == null || (tokensOut == null && astOut == null)) {
+            wrongUsage("missing input or output flag");
             return;
         }
 
@@ -61,21 +74,39 @@ public class Main {
         String code = Files.readString(Path.of(srcIn));
         List<Token> tokens = new Lexer(code).tokenize();
 
-        Path out = Path.of(tokensOut);
+        if (tokensOut != null) {
+            writeOut(tokensOut, Jsonizer.tokensToJson(tokens));
+        }
+
+        if (tokens.stream().anyMatch(t -> t.kind() == TokenKind.ERROR)) {
+            System.exit(1);
+        }
+
+        if (astOut != null) {
+            Parser parser = new Parser(tokens);
+            ProgramNode ast = parser.parse();
+
+            writeOut(astOut, AstJsonizer.toJson(ast));
+
+            if (AstErrors.hasErrors(ast)
+                    || SemanticErrors.hasErrors(ast)
+                    || !parser.errors().isEmpty()) {
+                System.exit(1);
+            }
+        }
+    }
+
+    private static void writeOut(String path, String content) throws IOException {
+        Path out = Path.of(path);
         if (out.getParent() != null) {
             Files.createDirectories(out.getParent());
         }
-        Files.writeString(out, Jsonizer.tokensToJson(tokens));
-
-        if (tokens.stream().anyMatch(
-                t -> t.kind() == TokenKind.ERROR)) {
-            System.exit(1);
-        }
+        Files.writeString(out, content);
     }
 
     private static void wrongUsage(String msg) {
         System.err.println("error: " + msg);
-        System.err.println("usage: splc -g <ver> -t <tokens_out> <input.spl>");
+        System.err.println("usage: splc -g <ver> [-t <tokens_out>] [-a <ast_out>] <input.spl>");
         System.exit(2);
     }
 }
