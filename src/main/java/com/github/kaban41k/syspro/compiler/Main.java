@@ -84,8 +84,13 @@ public class Main {
             System.exit(1);
         }
 
-        Parser parser = new Parser(tokens);
-        ProgramNode ast = parser.parse();
+        Parser parser = null;
+        ProgramNode ast = null;
+
+        if (astOut != null || llvmOut != null) {
+            parser = new Parser(tokens);
+            ast = parser.parse();
+        }
 
         if (astOut != null) {
             writeOut(astOut, AstJsonizer.toJson(ast));
