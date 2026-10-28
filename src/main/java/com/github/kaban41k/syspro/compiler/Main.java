@@ -122,7 +122,7 @@ public class Main {
 
     private static void wrongUsage(String msg) {
         System.err.println("error: " + msg);
-        System.err.println("usage: splc -g <ver> [-t <tokens_out>] [-a <ast_out>] <input.spl>");
+        System.err.println("usage: splc -g <ver> [-t <tokens_out>] [-a <ast_out>] [-o <llvm_out>] <input.spl>");
         System.exit(2);
     }
 }
