@@ -110,7 +110,9 @@ public class Parser {
         List<Stmt> body = new ArrayList<>();
 
         while (!check(TokenKind.EOF)) {
+            int startPos = pos;
             body.add(parseStatement());
+            if (pos == startPos) step();
         }
 
         Token end = body.isEmpty() ? peek() : previous();
