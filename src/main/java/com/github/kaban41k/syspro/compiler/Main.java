@@ -84,20 +84,24 @@ public class Main {
             System.exit(1);
         }
 
-        Parser parser = null;
         ProgramNode ast = null;
+        boolean brokenAst = false;
 
         if (astOut != null || llvmOut != null) {
-            parser = new Parser(tokens);
+            Parser parser = new Parser(tokens);
             ast = parser.parse();
+
+            if (AstErrors.hasErrors(ast)
+                    || SemanticErrors.hasErrors(ast)
+                    || !parser.errors().isEmpty()) {
+                brokenAst = true;
+            }
         }
 
         if (astOut != null) {
             writeOut(astOut, AstJsonizer.toJson(ast));
 
-            if (AstErrors.hasErrors(ast)
-                    || SemanticErrors.hasErrors(ast)
-                    || !parser.errors().isEmpty()) {
+            if (brokenAst) {
                 System.exit(1);
             }
         }
