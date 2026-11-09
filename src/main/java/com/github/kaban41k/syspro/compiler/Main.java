@@ -107,8 +107,17 @@ public class Main {
         }
 
         if (llvmOut != null) {
-            String ir = new LlvmGenerator().generate(ast);
-            writeOut(llvmOut, ir);
+            if (brokenAst) {
+                System.exit(1);
+            }
+
+            try {
+                String ir = new LlvmGenerator().generate(ast);
+                writeOut(llvmOut, ir);
+            } catch (IllegalStateException e) {
+                System.err.println("codegen error: " + e.getMessage());
+                System.exit(1);
+            }
         }
     }
 
