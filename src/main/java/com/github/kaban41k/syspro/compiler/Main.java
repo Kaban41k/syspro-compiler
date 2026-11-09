@@ -69,7 +69,7 @@ public class Main {
             return;
         }
 
-        if (grammarVersion != null && grammarVersion != 1) {
+        if (grammarVersion != null && grammarVersion != 1 && grammarVersion != 2) {
             wrongUsage("grammar version " + grammarVersion + " not supported");
         }
 
