@@ -6,8 +6,5 @@
   "stages": [
     "lexer",
     "parser"
-  ],
-  "exit": {
-    "parser": "nonzero"
-  }
+  ]
 }
