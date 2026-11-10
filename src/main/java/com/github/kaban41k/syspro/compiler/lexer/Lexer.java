@@ -1,5 +1,6 @@
 package com.github.kaban41k.syspro.compiler.lexer;
 
+import com.github.kaban41k.syspro.compiler.common.Position;
 import com.github.kaban41k.syspro.compiler.token.Token;
 import com.github.kaban41k.syspro.compiler.token.TokenKind;
 
@@ -176,19 +177,19 @@ public class Lexer {
         int startCol = col;
 
         if (peek() == 0) {
-            return new Token(TokenKind.EOF, "", startLine, startCol);
+            return new Token(TokenKind.EOF, "", new Position(startLine, startCol));
         }
 
         if (isLetter(peek())) {
             String v = readIdent();
             TokenKind kind = KEYWORDS.getOrDefault(v, TokenKind.IDENT);
 
-            return new Token(kind, v, startLine, startCol);
+            return new Token(kind, v, new Position(startLine, startCol));
         }
 
         if (isDigit(peek())) {
             String v = readInt();
-            return new Token(TokenKind.INT, v, startLine, startCol);
+            return new Token(TokenKind.INT, v, new Position(startLine, startCol));
         }
 
         TokenKind kind = TokenKind.ERROR;
@@ -212,12 +213,12 @@ public class Lexer {
         }
 
         if (kind == TokenKind.ERROR) {
-            return new Token(TokenKind.ERROR, String.valueOf(step()), startLine, startCol);
+            return new Token(TokenKind.ERROR, String.valueOf(step()), new Position(startLine, startCol));
         }
 
         skip(value.length());
 
-        return new Token(kind, value, startLine, startCol);
+        return new Token(kind, value, new Position(startLine, startCol));
     }
 
     public List<Token> tokenize() {
@@ -232,8 +233,7 @@ public class Lexer {
                     if (!skipMLComment()) {
                         token = new Token(TokenKind.ERROR,
                                 "Unterminated multi-line comment",
-                                token.line(),
-                                token.column());
+                                token.pos());
                         tokens.add(token);
                     }
                 }

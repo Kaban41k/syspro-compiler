@@ -4,10 +4,11 @@ import com.github.kaban41k.syspro.compiler.ast.ProgramNode;
 import com.github.kaban41k.syspro.compiler.ast.expr.*;
 import com.github.kaban41k.syspro.compiler.ast.stmt.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.Objects;
 
 public class LlvmGenerator {
 
@@ -68,6 +69,7 @@ public class LlvmGenerator {
             case Assign a -> {
                 String val = genExpr(a.value());
                 String addr = locals.get(a.target().name());
+                Objects.requireNonNull(addr, "undeclared variable: " + a.target().name());
                 emit("store i64 " + val + ", ptr " + addr + ", align 8");
             }
             case Return r -> {
@@ -85,6 +87,7 @@ public class LlvmGenerator {
             case IntLiteral il -> String.valueOf(il.value());
             case Ident ident -> {
                 String addr = locals.get(ident.name());
+                Objects.requireNonNull(addr, "undeclared variable: " + ident.name());
                 String name = uniqueName(ident.name());
                 emit(name + " = load i64, ptr " + addr + ", align 8");
                 yield name;

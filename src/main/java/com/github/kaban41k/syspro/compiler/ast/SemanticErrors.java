@@ -46,7 +46,6 @@ public final class SemanticErrors {
             }
             case Return r -> hasErrors(r.value(), declared);
             case ExprStmt e -> hasErrors(e.value(), declared);
-            default -> false;
         };
     }
 
@@ -55,7 +54,8 @@ public final class SemanticErrors {
             case Ident id -> !declared.containsKey(id.name());
             case BinOp b -> hasErrors(b.left(), declared) || hasErrors(b.right(), declared);
             case Unary u -> hasErrors(u.operand(), declared);
-            default -> false;
+            case IntLiteral ignored -> false;
+            case ErrorExpr ignored -> false;
         };
     }
 }

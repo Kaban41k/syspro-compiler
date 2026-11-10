@@ -1,5 +1,6 @@
 package com.github.kaban41k.syspro.compiler.lexer;
 
+import com.github.kaban41k.syspro.compiler.common.Position;
 import com.github.kaban41k.syspro.compiler.token.Token;
 import com.github.kaban41k.syspro.compiler.token.TokenKind;
 import org.junit.jupiter.api.Test;
@@ -11,8 +12,8 @@ public class LexerTest {
     @Test
     void testSingleIdent() {
         List<Token> expected = List.of(
-                new Token(TokenKind.IDENT, "j", 1, 1),
-                new Token(TokenKind.EOF,   "",  1, 2)
+                new Token(TokenKind.IDENT, "j", new Position(1, 1)),
+                new Token(TokenKind.EOF,   "",  new Position(1, 2))
         );
 
         Lexer l = new Lexer("j");
@@ -24,7 +25,7 @@ public class LexerTest {
     @Test
     void testSingleCommentLine() {
         List<Token> expected = List.of(
-                new Token(TokenKind.EOF, "", 2, 1)
+                new Token(TokenKind.EOF, "", new Position(2, 1))
         );
 
         Lexer l = new Lexer(
@@ -40,7 +41,7 @@ public class LexerTest {
     @Test
     void testMultiCommentLine() {
         List<Token> expected = List.of(
-                new Token(TokenKind.EOF, "", 3, 1)
+                new Token(TokenKind.EOF, "", new Position(3, 1))
         );
 
         Lexer l = new Lexer(
@@ -57,8 +58,8 @@ public class LexerTest {
     @Test
     void testUnterminatedMultiCommentLine() {
         List<Token> expected = List.of(
-                new Token(TokenKind.ERROR, "Unterminated multi-line comment", 1, 1),
-                new Token(TokenKind.EOF, "", 3, 1)
+                new Token(TokenKind.ERROR, "Unterminated multi-line comment", new Position(1, 1)),
+                new Token(TokenKind.EOF, "", new Position(3, 1))
         );
 
         Lexer l = new Lexer(
@@ -75,12 +76,12 @@ public class LexerTest {
     @Test
     void testSimpleAssignment() {
         List<Token> expected = List.of(
-                new Token(TokenKind.VAR,    "var", 1, 1),
-                new Token(TokenKind.IDENT,  "x",   1, 5),
-                new Token(TokenKind.ASSIGN, "=",   1, 7),
-                new Token(TokenKind.INT,    "10",  1, 9),
-                new Token(TokenKind.SEMI,   ";",   1, 11),
-                new Token(TokenKind.EOF,    "",    2, 1)
+                new Token(TokenKind.VAR,    "var", new Position(1, 1)),
+                new Token(TokenKind.IDENT,  "x",   new Position(1, 5)),
+                new Token(TokenKind.ASSIGN, "=",   new Position(1, 7)),
+                new Token(TokenKind.INT,    "10",  new Position(1, 9)),
+                new Token(TokenKind.SEMI,   ";",   new Position(1, 11)),
+                new Token(TokenKind.EOF,    "",    new Position(2, 1))
         );
 
         Lexer l = new Lexer(

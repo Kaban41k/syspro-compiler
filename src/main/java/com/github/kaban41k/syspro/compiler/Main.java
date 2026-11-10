@@ -84,15 +84,24 @@ public class Main {
             System.exit(1);
         }
 
-        Parser parser = new Parser(tokens);
-        ProgramNode ast = parser.parse();
+        ProgramNode ast = null;
+        boolean brokenAst = false;
 
-        if (astOut != null) {
-            writeOut(astOut, AstJsonizer.toJson(ast));
+        if (astOut != null || llvmOut != null) {
+            Parser parser = new Parser(tokens);
+            ast = parser.parse();
 
             if (AstErrors.hasErrors(ast)
                     || SemanticErrors.hasErrors(ast)
                     || !parser.errors().isEmpty()) {
+                brokenAst = true;
+            }
+        }
+
+        if (astOut != null) {
+            writeOut(astOut, AstJsonizer.toJson(ast));
+
+            if (brokenAst) {
                 System.exit(1);
             }
         }
@@ -113,7 +122,7 @@ public class Main {
 
     private static void wrongUsage(String msg) {
         System.err.println("error: " + msg);
-        System.err.println("usage: splc -g <ver> [-t <tokens_out>] [-a <ast_out>] <input.spl>");
+        System.err.println("usage: splc -g <ver> [-t <tokens_out>] [-a <ast_out>] [-o <llvm_out>] <input.spl>");
         System.exit(2);
     }
 }

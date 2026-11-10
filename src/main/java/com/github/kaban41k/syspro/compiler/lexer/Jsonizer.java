@@ -31,8 +31,8 @@ public final class Jsonizer {
             sb.append("{");
             sb.append("\"kind\": \"").append(t.kind().name()).append("\", ");
             sb.append("\"value\": \"").append(escape(t.value())).append("\", ");
-            sb.append("\"line\": ").append(t.line()).append(", ");
-            sb.append("\"column\": ").append(t.column());
+            sb.append("\"line\": ").append(t.pos().line()).append(", ");
+            sb.append("\"column\": ").append(t.pos().column());
             sb.append("}");
 
             if (i < tokens.size() - 1) sb.append(',');
