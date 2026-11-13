@@ -73,6 +73,8 @@ public class Main {
             wrongUsage("grammar version " + grammarVersion + " not supported");
         }
 
+
+        // --- lexer ---
         String code = Files.readString(Path.of(srcIn));
         List<Token> tokens = new Lexer(code).tokenize();
 
@@ -84,6 +86,7 @@ public class Main {
             System.exit(1);
         }
 
+        // --- parser ---
         ProgramNode ast = null;
         boolean brokenAst = false;
 
@@ -106,6 +109,8 @@ public class Main {
             System.exit(1);
         }
 
+
+        // --- codegen ---
         if (llvmOut != null) {
             try {
                 String ir = new LlvmGenerator().generate(ast);
