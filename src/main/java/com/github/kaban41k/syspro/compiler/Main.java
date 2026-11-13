@@ -100,17 +100,13 @@ public class Main {
 
         if (astOut != null) {
             writeOut(astOut, AstJsonizer.toJson(ast));
+        }
 
-            if (brokenAst) {
-                System.exit(1);
-            }
+        if (brokenAst) {
+            System.exit(1);
         }
 
         if (llvmOut != null) {
-            if (brokenAst) {
-                System.exit(1);
-            }
-
             try {
                 String ir = new LlvmGenerator().generate(ast);
                 writeOut(llvmOut, ir);
