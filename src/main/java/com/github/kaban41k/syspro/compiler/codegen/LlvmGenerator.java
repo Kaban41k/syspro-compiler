@@ -1,17 +1,10 @@
 package com.github.kaban41k.syspro.compiler.codegen;
 
-import com.github.kaban41k.syspro.compiler.ast.ProgramNode;
-import com.github.kaban41k.syspro.compiler.ast.Op;
+import com.github.kaban41k.syspro.compiler.ast.*;
 import com.github.kaban41k.syspro.compiler.ast.expr.*;
 import com.github.kaban41k.syspro.compiler.ast.stmt.*;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class LlvmGenerator {
 
@@ -19,6 +12,9 @@ public class LlvmGenerator {
     private final Map<String, String> locals = new HashMap<>();
     private final Set<String> usedNames = new HashSet<>();
     private final Deque<LoopCtx> loops = new ArrayDeque<>();
+    private final Set<String> knownFunctions = new HashSet<>();
+    private final Set<String> emittedDeclares = new HashSet<>();
+    private final Set<String> pendingDeclares = new LinkedHashSet<>();
     private int labelCounter = 0;
     private String currentBlock = "entry";
     private boolean terminated = false;
@@ -31,21 +27,74 @@ public class LlvmGenerator {
         out.append("target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\"\n");
         out.append("target triple = \"x86_64-unknown-linux-gnu\"\n");
         out.append("\n");
-        out.append("define i64 @main() {\n");
-        out.append("entry:\n");
 
-        for (Stmt s : program.body()) {
-            if (terminated) break;
-            genStmt(s);
+        for (Node d : program.body()) {
+            if (d instanceof ExternDecl e) {
+                knownFunctions.add(e.name());
+                genExternDecl(e);
+            } else if (d instanceof FuncDecl f) {
+                knownFunctions.add(f.name());
+            }
         }
+
+        for (Node d : program.body()) {
+            if (d instanceof FuncDecl f) {
+                genFuncDecl(f);
+            }
+        }
+
+        return out.toString();
+    }
+
+    private void genExternDecl(ExternDecl e) {
+        out.append("declare i64 @").append(e.name()).append("(");
+        for (int i = 0; i < e.params().size(); i++) {
+            if (i > 0) out.append(", ");
+            out.append("i64");
+        }
+        out.append(")\n");
+    }
+
+    private void genFuncDecl(FuncDecl f) {
+        resetForFunction();
+
+        out.append("\ndefine i64 @").append(f.name()).append("(");
+        for (int i = 0; i < f.params().size(); i++) {
+            if (i > 0) out.append(", ");
+            out.append("i64 %").append(f.params().get(i).name()).append(".arg");
+        }
+        out.append(") {\nentry:\n");
+
+        for (Ident p : f.params()) {
+            String argName = "%" + p.name() + ".arg";
+            String addr = uniqueName(p.name());
+            emit(addr + " = alloca i64, align 8");
+            emit("store i64 " + argName + ", ptr " + addr + ", align 8");
+            locals.put(p.name(), addr);
+        }
+
+        genStmt(f.body());
 
         if (!terminated) {
             emit("ret i64 0");
         }
-
         out.append("}\n");
 
-        return out.toString();
+        for (String name : pendingDeclares) {
+            if (emittedDeclares.add(name)) {
+                out.append("\ndeclare i64 @").append(name).append("()\n");
+            }
+        }
+        pendingDeclares.clear();
+    }
+
+    private void resetForFunction() {
+        locals.clear();
+        usedNames.clear();
+        loops.clear();
+        labelCounter = 0;
+        currentBlock = "entry";
+        terminated = false;
     }
 
     private void emit(String line) {
@@ -193,6 +242,25 @@ public class LlvmGenerator {
             }
             case BinOp binOp -> genBinOp(binOp);
             case Unary u -> genUnary(u);
+            case Call c -> {
+                List<String> argVals = new ArrayList<>();
+                for (Expr a : c.args()) argVals.add(genExpr(a));
+                StringBuilder sb = new StringBuilder();
+                sb.append("call i64 @").append(c.callee().name()).append("(");
+                for (int i = 0; i < argVals.size(); i++) {
+                    if (i > 0) sb.append(", ");
+                    sb.append("i64 ").append(argVals.get(i));
+                }
+                sb.append(")");
+                String name = uniqueName("calltmp");
+                emit(name + " = " + sb);
+
+                String callee = c.callee().name();
+                if (!knownFunctions.contains(callee) && !emittedDeclares.contains(callee)) {
+                    pendingDeclares.add(callee);
+                }
+                yield name;
+            }
             case ErrorExpr ee -> throw new IllegalStateException("codegen on error: " + ee.message());
         };
     }
@@ -211,7 +279,7 @@ public class LlvmGenerator {
                 case GT -> "sgt";
                 case LE -> "sle";
                 case GE -> "sge";
-                default -> throw new IllegalStateException("bad cmp op: " + op);
+                default -> throw new IllegalStateException("bad cmp: " + op);
             };
             String cmp = uniqueName("cmptmp");
             emit(cmp + " = icmp " + cmpOp + " i64 " + l + ", " + r);

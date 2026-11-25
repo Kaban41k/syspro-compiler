@@ -3,9 +3,11 @@ package com.github.kaban41k.syspro.compiler.parser;
 import com.github.kaban41k.syspro.compiler.ast.Mut;
 import com.github.kaban41k.syspro.compiler.ast.Op;
 import com.github.kaban41k.syspro.compiler.ast.ProgramNode;
+import com.github.kaban41k.syspro.compiler.ast.ExternDecl;
+import com.github.kaban41k.syspro.compiler.ast.FuncDecl;
+import com.github.kaban41k.syspro.compiler.ast.TopDecl;
 import com.github.kaban41k.syspro.compiler.ast.expr.*;
 import com.github.kaban41k.syspro.compiler.ast.stmt.*;
-import com.github.kaban41k.syspro.compiler.common.Position;
 import com.github.kaban41k.syspro.compiler.token.Token;
 import com.github.kaban41k.syspro.compiler.token.TokenKind;
 
@@ -116,16 +118,16 @@ public class Parser {
     }
 
     private ProgramNode parseProgram() {
-        List<Stmt> body = new ArrayList<>();
+        List<TopDecl> body = new ArrayList<>();
 
         while (!check(TokenKind.EOF)) {
             int startPos = pos;
-            body.add(parseStatement());
+            TopDecl d = parseTopDecl();
+            if (d != null) body.add(d);
             if (pos == startPos) step();
         }
 
         Token end = body.isEmpty() ? peek() : previous();
-
         return new ProgramNode(end.pos(), body);
     }
 
@@ -139,6 +141,58 @@ public class Parser {
         if (check(TokenKind.LBRACE))   return parseBlock();
         if (check(TokenKind.IDENT) && checkAt(TokenKind.ASSIGN, 1)) return parseAssign();
         return parseExprStmt();
+    }
+
+    private TopDecl parseTopDecl() {
+        if (check(TokenKind.EXTERN)) return parseExtern();
+        if (check(TokenKind.DEF))    return parseFunc();
+
+        Token t = peek();
+        errors.add("expected 'def' or 'extern', got " + t.kind()
+                + " at " + t.pos().line() + ":" + t.pos().column());
+        while (!check(TokenKind.EOF)
+                && !check(TokenKind.DEF)
+                && !check(TokenKind.EXTERN)) {
+            step();
+        }
+        return null;
+    }
+
+    private TopDecl parseExtern() {
+        expectStep(TokenKind.EXTERN);
+        expectStep(TokenKind.DEF);
+        Token name = expectStep(TokenKind.IDENT);
+        expectStep(TokenKind.LPAREN);
+        List<Ident> params = parseParamList();
+        expectStep(TokenKind.RPAREN);
+        expectStep(TokenKind.SEMI);
+        return new ExternDecl(previous().pos(), name.value(), params);
+    }
+
+    private TopDecl parseFunc() {
+        expectStep(TokenKind.DEF);
+        Token name = expectStep(TokenKind.IDENT);
+        expectStep(TokenKind.LPAREN);
+        List<Ident> params = parseParamList();
+        expectStep(TokenKind.RPAREN);
+        Block body = parseBlock();
+        return new FuncDecl(previous().pos(), name.value(), params, body);
+    }
+
+
+    private List<Ident> parseParamList() {
+        List<Ident> params = new ArrayList<>();
+        if (check(TokenKind.RPAREN)) return params;
+        params.add(parseParam());
+        while (matchStep(TokenKind.COMMA)) {
+            params.add(parseParam());
+        }
+        return params;
+    }
+
+    private Ident parseParam() {
+        Token t = expectStep(TokenKind.IDENT);
+        return new Ident(t.pos(), t.value());
     }
 
     private Expr parsePrimary() {
@@ -169,18 +223,33 @@ public class Parser {
         return new ErrorExpr(peek().pos(), "unexpected token '" + peek().kind() + "'");
     }
 
+    private Expr parseCall() {
+        Expr e = parsePrimary();
+        if (check(TokenKind.LPAREN) && e instanceof Ident ident) {
+            step();
+            List<Expr> args = new ArrayList<>();
+            if (!check(TokenKind.RPAREN)) {
+                args.add(parseExpression());
+                while (matchStep(TokenKind.COMMA)) {
+                    args.add(parseExpression());
+                }
+            }
+            expectStep(TokenKind.RPAREN);
+            return new Call(previous().pos(), ident, args);
+        }
+        return e;
+    }
+
     private Expr parseUnary() {
         if (matchStep(TokenKind.MINUS)) {
             Expr operand = parseUnary();
             return new Unary(previous().pos(), Op.MINUS, operand);
         }
-
         if (matchStep(TokenKind.NOT)) {
             Expr operand = parseUnary();
             return new Unary(previous().pos(), Op.NOT, operand);
         }
-
-        return parsePrimary();
+        return parseCall();
     }
 
     private Expr parseMult() {
@@ -300,7 +369,7 @@ public class Parser {
         return new Declare(previous().pos(), mut, name.value(), expr);
     }
 
-    private Stmt parseBlock() {
+    private Block parseBlock() {
         expectStep(TokenKind.LBRACE);
         List<Stmt> body = new ArrayList<>();
 

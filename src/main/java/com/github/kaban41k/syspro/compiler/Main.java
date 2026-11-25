@@ -39,9 +39,9 @@ public class Main {
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "-g" -> {
-                        if (i + 1 >= args.length) wrongUsage("missing value for -g");
-                        grammarVersion = Integer.parseInt(args[++i]);
-                    }
+                    if (i + 1 >= args.length) wrongUsage("missing value for -g");
+                    grammarVersion = Integer.parseInt(args[++i]);
+                }
                 case "-t" -> {
                     if (i + 1 >= args.length) wrongUsage("missing value for -t");
                     tokensOut = args[++i];
@@ -69,7 +69,7 @@ public class Main {
             return;
         }
 
-        if (grammarVersion != null && grammarVersion != 1 && grammarVersion != 2) {
+        if (grammarVersion != null && !(1 <= grammarVersion && grammarVersion <= 3)) {
             wrongUsage("grammar version " + grammarVersion + " not supported");
         }
 

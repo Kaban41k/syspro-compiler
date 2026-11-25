@@ -21,6 +21,11 @@ public final class AstErrors {
             case If i     -> hasErrors(i.cond()) || hasErrors(i.thenBranch())
                     || (i.elseBranch() != null && hasErrors(i.elseBranch()));
             case While w  -> hasErrors(w.cond()) || hasErrors(w.body());
+            case ExternDecl e -> e.params().stream().anyMatch(AstErrors::hasErrors);
+            case FuncDecl f   -> f.params().stream().anyMatch(AstErrors::hasErrors)
+                    || hasErrors(f.body());
+            case Call c       -> hasErrors(c.callee())
+                    || c.args().stream().anyMatch(AstErrors::hasErrors);
             case Break ignored -> false;
             case Continue ignored -> false;
             case BoolLiteral ignored -> false;
