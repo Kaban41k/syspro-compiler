@@ -54,6 +54,9 @@ public final class AstJsonizer {
             case While w       -> whileStmt(w);
             case Break b       -> breakStmt(b);
             case Continue c    -> continueStmt(c);
+            case ExternDecl e -> externDecl(e);
+            case FuncDecl f   -> funcDecl(f);
+            case Call c       -> call(c);
             default -> throw new IllegalStateException("unknown node: " + n);
         }
     }
@@ -201,6 +204,28 @@ public final class AstJsonizer {
 
     private void continueStmt(Continue ignored) {
         openObject(ignored.pos(), "Continue");
+        closeObject();
+    }
+
+    private void externDecl(ExternDecl e) {
+        openObject(e.pos(), "ExternDecl");
+        fieldString("name", e.name());
+        fieldArray("params", e.params());
+        closeObject();
+    }
+
+    private void funcDecl(FuncDecl f) {
+        openObject(f.pos(), "FuncDecl");
+        fieldString("name", f.name());
+        fieldArray("params", f.params());
+        fieldNode("body", f.body());
+        closeObject();
+    }
+
+    private void call(Call c) {
+        openObject(c.pos(), "Call");
+        fieldNode("callee", c.callee());
+        fieldArray("args", c.args());
         closeObject();
     }
 

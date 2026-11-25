@@ -20,7 +20,9 @@ public class Lexer {
         Map.entry("break",    TokenKind.BREAK),
         Map.entry("continue", TokenKind.CONTINUE),
         Map.entry("true",     TokenKind.TRUE),
-        Map.entry("false",    TokenKind.FALSE)
+        Map.entry("false",    TokenKind.FALSE),
+        Map.entry("def",      TokenKind.DEF),
+        Map.entry("extern",   TokenKind.EXTERN)
     );
 
     private static final Map<String, TokenKind> FIXEDTOKENS = buildFixedTokens();
@@ -53,6 +55,7 @@ public class Lexer {
                 Map.entry("{",  TokenKind.LBRACE),
                 Map.entry("}",  TokenKind.RBRACE),
                 Map.entry(";",  TokenKind.SEMI),
+                Map.entry(",",  TokenKind.COMMA),
 
                 // comments
                 Map.entry("//", TokenKind.SLCOMMENT),

@@ -5,7 +5,10 @@ public enum TokenKind {
     IDENT, INT, TRUE, FALSE,
 
     // keywords
-    VAL, VAR, RETURN, IF, ELSE, WHILE, BREAK, CONTINUE,
+    VAL, VAR, RETURN,
+    IF, ELSE,
+    WHILE, BREAK, CONTINUE,
+    DEF, EXTERN,
 
     // operators
     PLUS, MINUS, MULT, DIV, ASSIGN,
@@ -13,7 +16,9 @@ public enum TokenKind {
     AND, OR, NOT,
 
     // punctuation
-    LPAREN, RPAREN, LBRACE, RBRACE, SEMI,
+    LPAREN, RPAREN,
+    LBRACE, RBRACE,
+    SEMI, COMMA,
 
     // special
     EOF, ERROR,
