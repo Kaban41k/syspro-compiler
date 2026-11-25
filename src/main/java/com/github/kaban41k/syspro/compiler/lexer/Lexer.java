@@ -11,9 +11,16 @@ import java.util.Map;
 
 public class Lexer {
     private static final Map<String, TokenKind> KEYWORDS = Map.ofEntries(
-        Map.entry("val",    TokenKind.VAL),
-        Map.entry("var",    TokenKind.VAR),
-        Map.entry("return", TokenKind.RETURN)
+        Map.entry("val",      TokenKind.VAL),
+        Map.entry("var",      TokenKind.VAR),
+        Map.entry("return",   TokenKind.RETURN),
+        Map.entry("if",       TokenKind.IF),
+        Map.entry("else",     TokenKind.ELSE),
+        Map.entry("while",    TokenKind.WHILE),
+        Map.entry("break",    TokenKind.BREAK),
+        Map.entry("continue", TokenKind.CONTINUE),
+        Map.entry("true",     TokenKind.TRUE),
+        Map.entry("false",    TokenKind.FALSE)
     );
 
     private static final Map<String, TokenKind> FIXEDTOKENS = buildFixedTokens();
@@ -27,9 +34,24 @@ public class Lexer {
                 Map.entry("/",  TokenKind.DIV),
                 Map.entry("=",  TokenKind.ASSIGN),
 
+                // comparison
+                Map.entry("==", TokenKind.EQ),
+                Map.entry("!=", TokenKind.NE),
+                Map.entry("<",  TokenKind.LT),
+                Map.entry(">",  TokenKind.GT),
+                Map.entry("<=", TokenKind.LE),
+                Map.entry(">=", TokenKind.GE),
+
+                // logical
+                Map.entry("&&", TokenKind.AND),
+                Map.entry("||", TokenKind.OR),
+                Map.entry("!",  TokenKind.NOT),
+
                 // punctuation
                 Map.entry("(",  TokenKind.LPAREN),
                 Map.entry(")",  TokenKind.RPAREN),
+                Map.entry("{",  TokenKind.LBRACE),
+                Map.entry("}",  TokenKind.RBRACE),
                 Map.entry(";",  TokenKind.SEMI),
 
                 // comments

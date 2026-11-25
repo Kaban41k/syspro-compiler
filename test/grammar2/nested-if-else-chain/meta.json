@@ -9,6 +9,6 @@
     "compiler"
   ],
   "exit": {
-    "compiler": 1
+    "run": 1
   }
 }

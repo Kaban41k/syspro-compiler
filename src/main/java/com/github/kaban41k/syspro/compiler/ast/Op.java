@@ -5,6 +5,15 @@ public enum Op {
     MINUS("-"),
     MULT ("*"),
     DIV  ("/"),
+    EQ   ("=="),
+    NE   ("!="),
+    LT   ("<"),
+    GT   (">"),
+    LE   ("<="),
+    GE   (">="),
+    AND  ("&&"),
+    OR   ("||"),
+    NOT  ("!"),
     UNEXPECTED("UNEXPECTED");
 
     private final String text;

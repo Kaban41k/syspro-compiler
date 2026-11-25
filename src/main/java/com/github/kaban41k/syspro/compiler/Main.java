@@ -69,10 +69,12 @@ public class Main {
             return;
         }
 
-        if (grammarVersion != null && grammarVersion != 1) {
+        if (grammarVersion != null && grammarVersion != 1 && grammarVersion != 2) {
             wrongUsage("grammar version " + grammarVersion + " not supported");
         }
 
+
+        // --- lexer ---
         String code = Files.readString(Path.of(srcIn));
         List<Token> tokens = new Lexer(code).tokenize();
 
@@ -84,6 +86,7 @@ public class Main {
             System.exit(1);
         }
 
+        // --- parser ---
         ProgramNode ast = null;
         boolean brokenAst = false;
 
@@ -100,15 +103,22 @@ public class Main {
 
         if (astOut != null) {
             writeOut(astOut, AstJsonizer.toJson(ast));
-
-            if (brokenAst) {
-                System.exit(1);
-            }
         }
 
+        if (brokenAst) {
+            System.exit(1);
+        }
+
+
+        // --- codegen ---
         if (llvmOut != null) {
-            String ir = new LlvmGenerator().generate(ast);
-            writeOut(llvmOut, ir);
+            try {
+                String ir = new LlvmGenerator().generate(ast);
+                writeOut(llvmOut, ir);
+            } catch (IllegalStateException e) {
+                System.err.println("codegen error: " + e.getMessage());
+                System.exit(1);
+            }
         }
     }
 

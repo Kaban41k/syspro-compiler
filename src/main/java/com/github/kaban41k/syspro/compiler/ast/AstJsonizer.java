@@ -1,10 +1,7 @@
 package com.github.kaban41k.syspro.compiler.ast;
 
 import com.github.kaban41k.syspro.compiler.ast.expr.*;
-import com.github.kaban41k.syspro.compiler.ast.stmt.Assign;
-import com.github.kaban41k.syspro.compiler.ast.stmt.Declare;
-import com.github.kaban41k.syspro.compiler.ast.stmt.ExprStmt;
-import com.github.kaban41k.syspro.compiler.ast.stmt.Return;
+import com.github.kaban41k.syspro.compiler.ast.stmt.*;
 
 import com.github.kaban41k.syspro.compiler.common.Position;
 
@@ -51,6 +48,12 @@ public final class AstJsonizer {
             case BinOp b       -> binOp(b);
             case Unary u       -> unaryOp(u);
             case ErrorExpr e   -> errorExpr(e);
+            case BoolLiteral b -> boolLiteral(b);
+            case Block b       -> block(b);
+            case If i          -> ifStmt(i);
+            case While w       -> whileStmt(w);
+            case Break b       -> breakStmt(b);
+            case Continue c    -> continueStmt(c);
             default -> throw new IllegalStateException("unknown node: " + n);
         }
     }
@@ -75,21 +78,31 @@ public final class AstJsonizer {
 
     private void program(ProgramNode p) {
         openObject(p.pos(), "Program");
+        fieldArray("body", p.body());
+        closeObject();
+    }
+
+    private void fieldBool(String s, boolean value) {
         comma();
         indent();
-        sb.append('"').append("body").append("\": [");
-        if (!p.body().isEmpty()) {
+        sb.append('"').append(s).append("\": ").append(value);
+    }
+
+    private void fieldArray(String s, java.util.List<? extends Node> nodes) {
+        comma();
+        indent();
+        sb.append('"').append(s).append("\": [");
+        if (!nodes.isEmpty()) {
             sb.append("\n");
-            for (int i = 0; i < p.body().size(); i++) {
+            for (int i = 0; i < nodes.size(); i++) {
                 indent();
-                node(p.body().get(i));
-                if (i < p.body().size() - 1) sb.append(",");
+                node(nodes.get(i));
+                if (i < nodes.size() - 1) sb.append(",");
                 sb.append("\n");
             }
             indent();
         }
         sb.append("]");
-        closeObject();
     }
 
     private void declare(Declare d) {
@@ -149,6 +162,45 @@ public final class AstJsonizer {
     private void errorExpr(ErrorExpr e) {
         openObject(e.pos(), "Error");
         fieldString("message", e.message());
+        closeObject();
+    }
+
+    private void boolLiteral(BoolLiteral b) {
+        openObject(b.pos(), "BoolLiteral");
+        fieldBool("value", b.value());
+        closeObject();
+    }
+
+    private void block(Block b) {
+        openObject(b.pos(), "Block");
+        fieldArray("body", b.body());
+        closeObject();
+    }
+
+    private void ifStmt(If i) {
+        openObject(i.pos(), "If");
+        fieldNode("cond", i.cond());
+        fieldNode("then", i.thenBranch());
+        if (i.elseBranch() != null) {
+            fieldNode("else", i.elseBranch());
+        }
+        closeObject();
+    }
+
+    private void whileStmt(While w) {
+        openObject(w.pos(), "While");
+        fieldNode("cond", w.cond());
+        fieldNode("body", w.body());
+        closeObject();
+    }
+
+    private void breakStmt(Break ignored) {
+        openObject(ignored.pos(), "Break");
+        closeObject();
+    }
+
+    private void continueStmt(Continue ignored) {
+        openObject(ignored.pos(), "Continue");
         closeObject();
     }
 

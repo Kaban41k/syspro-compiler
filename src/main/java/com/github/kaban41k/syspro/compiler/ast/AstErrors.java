@@ -17,17 +17,18 @@ public final class AstErrors {
             case BinOp b       -> hasErrors(b.left()) || hasErrors(b.right());
             case Unary u       -> hasErrors(u.operand());
             case ErrorExpr ee  -> true;
+            case Block b  -> b.body().stream().anyMatch(AstErrors::hasErrors);
+            case If i     -> hasErrors(i.cond()) || hasErrors(i.thenBranch())
+                    || (i.elseBranch() != null && hasErrors(i.elseBranch()));
+            case While w  -> hasErrors(w.cond()) || hasErrors(w.body());
+            case Break ignored -> false;
+            case Continue ignored -> false;
+            case BoolLiteral ignored -> false;
             default -> false;
         };
     }
 
     private static boolean programHasErrors(ProgramNode p) {
-        if (p.body().isEmpty()) {
-            return false;
-        }
-        if (!(p.body().getLast() instanceof Return)) {
-            return true;
-        }
         return p.body().stream().anyMatch(AstErrors::hasErrors);
     }
 }

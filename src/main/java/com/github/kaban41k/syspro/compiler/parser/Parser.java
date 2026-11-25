@@ -102,6 +102,15 @@ public class Parser {
             case MINUS -> Op.MINUS;
             case MULT  -> Op.MULT;
             case DIV   -> Op.DIV;
+            case EQ    -> Op.EQ;
+            case NE    -> Op.NE;
+            case LT    -> Op.LT;
+            case GT    -> Op.GT;
+            case LE    -> Op.LE;
+            case GE    -> Op.GE;
+            case AND   -> Op.AND;
+            case OR    -> Op.OR;
+            case NOT   -> Op.NOT;
             default    -> Op.UNEXPECTED;
         };
     }
@@ -121,15 +130,14 @@ public class Parser {
     }
 
     private Stmt parseStatement() {
-        if (check(TokenKind.RETURN)) {
-            return parseReturn();
-        }
-        if (check(TokenKind.VAL) || check(TokenKind.VAR)) {
-            return parseDeclare();
-        }
-        if (check(TokenKind.IDENT) && checkAt(TokenKind.ASSIGN, 1)) {
-            return parseAssign();
-        }
+        if (check(TokenKind.RETURN))   return parseReturn();
+        if (check(TokenKind.VAL) || check(TokenKind.VAR)) return parseDeclare();
+        if (check(TokenKind.IF))       return parseIf();
+        if (check(TokenKind.WHILE))    return parseWhile();
+        if (check(TokenKind.BREAK))    return parseBreak();
+        if (check(TokenKind.CONTINUE)) return parseContinue();
+        if (check(TokenKind.LBRACE))   return parseBlock();
+        if (check(TokenKind.IDENT) && checkAt(TokenKind.ASSIGN, 1)) return parseAssign();
         return parseExprStmt();
     }
 
@@ -137,6 +145,14 @@ public class Parser {
         if (matchStep(TokenKind.INT)) {
             Token t = previous();
             return new IntLiteral(t.pos(), Long.parseLong(t.value()));
+        }
+
+        if (matchStep(TokenKind.TRUE)) {
+            return new BoolLiteral(previous().pos(), true);
+        }
+
+        if (matchStep(TokenKind.FALSE)) {
+            return new BoolLiteral(previous().pos(), false);
         }
 
         if (matchStep(TokenKind.IDENT)) {
@@ -157,6 +173,11 @@ public class Parser {
         if (matchStep(TokenKind.MINUS)) {
             Expr operand = parseUnary();
             return new Unary(previous().pos(), Op.MINUS, operand);
+        }
+
+        if (matchStep(TokenKind.NOT)) {
+            Expr operand = parseUnary();
+            return new Unary(previous().pos(), Op.NOT, operand);
         }
 
         return parsePrimary();
@@ -187,7 +208,53 @@ public class Parser {
     }
 
     private Expr parseExpression() {
-        return parseAdditive();
+        return parseLogicalOr();
+    }
+
+    private Expr parseLogicalOr() {
+        Expr left = parseLogicalAnd();
+
+        while (matchStep(TokenKind.OR)) {
+            Expr right = parseLogicalAnd();
+            left = new BinOp(previous().pos(), Op.OR, left, right);
+        }
+
+        return left;
+    }
+
+    private Expr parseLogicalAnd() {
+        Expr left = parseEquality();
+
+        while (matchStep(TokenKind.AND)) {
+            Expr right = parseEquality();
+            left = new BinOp(previous().pos(), Op.AND, left, right);
+        }
+
+        return left;
+    }
+
+    private Expr parseEquality() {
+        Expr left = parseRelational();
+
+        while (matchStep(TokenKind.EQ, TokenKind.NE)) {
+            Token op = previous();
+            Expr right = parseRelational();
+            left = new BinOp(previous().pos(), toOp(op), left, right);
+        }
+
+        return left;
+    }
+
+    private Expr parseRelational() {
+        Expr left = parseAdditive();
+
+        while (matchStep(TokenKind.LT, TokenKind.GT, TokenKind.LE, TokenKind.GE)) {
+            Token op = previous();
+            Expr right = parseAdditive();
+            left = new BinOp(previous().pos(), toOp(op), left, right);
+        }
+
+        return left;
     }
 
     private Stmt parseExprStmt() {
@@ -231,6 +298,68 @@ public class Parser {
         if (check(TokenKind.SEMI)) step();
 
         return new Declare(previous().pos(), mut, name.value(), expr);
+    }
+
+    private Stmt parseBlock() {
+        expectStep(TokenKind.LBRACE);
+        List<Stmt> body = new ArrayList<>();
+
+        while (!check(TokenKind.RBRACE) && !check(TokenKind.EOF)) {
+            int startPos = pos;
+            body.add(parseStatement());
+            if (pos == startPos) step();
+        }
+
+        expectStep(TokenKind.RBRACE);
+        return new Block(previous().pos(), body);
+    }
+
+    private Stmt parseIf() {
+        expectStep(TokenKind.IF);
+        Expr cond;
+        if (!check(TokenKind.LPAREN)) {
+            Token pos = peek();
+            parseExpression();
+            cond = new ErrorExpr(pos.pos(), "expected '('");
+        } else {
+            step();
+            cond = parseExpression();
+            expectStep(TokenKind.RPAREN);
+        }
+        Stmt thenBranch = parseStatement();
+        Stmt elseBranch = null;
+        if (matchStep(TokenKind.ELSE)) {
+            elseBranch = parseStatement();
+        }
+        return new If(previous().pos(), cond, thenBranch, elseBranch);
+    }
+
+    private Stmt parseWhile() {
+        expectStep(TokenKind.WHILE);
+        Expr cond;
+        if (!check(TokenKind.LPAREN)) {
+            Token pos = peek();
+            parseExpression();
+            cond = new ErrorExpr(pos.pos(), "expected '('");
+        } else {
+            step();
+            cond = parseExpression();
+            expectStep(TokenKind.RPAREN);
+        }
+        Stmt body = parseStatement();
+        return new While(previous().pos(), cond, body);
+    }
+
+    private Stmt parseBreak() {
+        expectStep(TokenKind.BREAK);
+        expectStep(TokenKind.SEMI);
+        return new Break(previous().pos());
+    }
+
+    private Stmt parseContinue() {
+        expectStep(TokenKind.CONTINUE);
+        expectStep(TokenKind.SEMI);
+        return new Continue(previous().pos());
     }
 
     private Stmt parseAssign() {
